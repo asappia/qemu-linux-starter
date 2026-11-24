@@ -47,19 +47,14 @@ guest_ok() {
   fi
 }
 
-run_guest() {
-  local bz image serial norm seconds rc
-  bz="$ROOT/build/artifacts/bzImage"
-  image="$ROOT/build/artifacts/rootfs.img"
-  serial="$ROOT/build/logs/guest-serial.log"
-  norm="$ROOT/build/logs/guest-serial.norm"
-  [[ -f "$bz" ]] || die "missing $bz; run ./run.sh --build-only"
-  [[ -f "$image" ]] || die "missing $image; run ./run.sh --build-only"
-  require_qemu
-  mkdir -p -- "$ROOT/build/logs"
+launch_qemu() {
+  local serial=$1
+  shift
+  local seconds rc norm
+  norm="${serial}.norm"
   seconds=$(qemu_timeout)
+  mkdir -p -- "$ROOT/build/logs"
   rm -f -- "$serial" "$norm"
-  log "qemu: booting baseline for ${seconds}s"
   set +e
   timeout "$seconds" qemu-system-x86_64 \
     -machine pc \
@@ -70,23 +65,33 @@ run_guest() {
     -display none \
     -monitor none \
     -nic none \
-    -serial "file:${serial}" \
-    -kernel "$bz" \
-    -append "console=ttyS0,115200 root=/dev/vda rootfstype=ext4 rootwait ro init=/sbin/init" \
-    -drive "file=${image},format=raw,if=virtio,readonly=on" \
-    </dev/null >"$ROOT/build/logs/qemu.log" 2>&1
-  rc=$?
+    -serial stdio \
+    "$@" \
+    </dev/null 2>"$ROOT/build/logs/qemu.log" | stdbuf -oL tee "$serial"
+  rc=${PIPESTATUS[0]}
   set -e
-  if [[ -f "$serial" ]]; then
-    cat -- "$serial"
-  fi
   if [[ "$rc" -eq 124 ]]; then
     die "qemu timed out after ${seconds}s"
   fi
   if [[ "$rc" -ne 0 ]]; then
     die "qemu exited with status ${rc}"
   fi
-  [[ -f "$serial" ]] || die "qemu produced no guest serial log"
+  [[ -s "$serial" ]] || die "qemu produced no guest serial log"
   guest_ok "$serial" "$norm"
+}
+
+run_guest() {
+  local bz image serial
+  bz="$ROOT/build/artifacts/bzImage"
+  image="$ROOT/build/artifacts/rootfs.img"
+  serial="$ROOT/build/logs/guest-serial.log"
+  [[ -f "$bz" ]] || die "missing $bz; run ./run.sh --build-only"
+  [[ -f "$image" ]] || die "missing $image; run ./run.sh --build-only"
+  require_qemu
+  log "qemu: booting baseline"
+  launch_qemu "$serial" \
+    -kernel "$bz" \
+    -append "console=ttyS0,115200 root=/dev/vda rootfstype=ext4 rootwait ro init=/sbin/init" \
+    -drive "file=${image},format=raw,if=virtio,readonly=on"
   log "qemu: guest printed hello world and powered off"
 }

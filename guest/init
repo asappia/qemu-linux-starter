@@ -1,5 +1,5 @@
 #!/bin/sh
-# PID 1. Installed as /sbin/init and run by BusyBox ash.
+# PID 1. Mounts what the guest needs, runs /bin/startup, then powers off.
 
 say() {
     /bin/busybox echo "$1"
@@ -38,7 +38,10 @@ if ! /bin/busybox mount -t tmpfs tmpfs /tmp; then
     fail tmpfs
 fi
 
-say "hello world"
+if ! /bin/startup; then
+    fail startup
+fi
+
 /bin/busybox sync
 
 if ! /bin/busybox poweroff -f; then

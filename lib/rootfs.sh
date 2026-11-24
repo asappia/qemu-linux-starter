@@ -114,22 +114,8 @@ own_rootfs() {
   rm -f -- "$cmds"
 }
 
-build_rootfs() {
-  local tree image stamp expected init_hash
-  tree="$ROOT/build/rootfs-tree"
-  image="$ROOT/build/artifacts/rootfs.img"
-  stamp="$ROOT/build/stamps/rootfs"
-  command -v mke2fs >/dev/null 2>&1 || die "mke2fs is missing (Ubuntu package: e2fsprogs)"
-  command -v debugfs >/dev/null 2>&1 || die "debugfs is missing (Ubuntu package: e2fsprogs)"
-  build_busybox
-  init_hash=$(sha256sum -- "$ROOT/guest/init" | awk '{ print $1 }')
-  expected="${init_hash} $(cat -- "$ROOT/build/stamps/busybox")"
-  if [[ -f "$stamp" && -f "$image" && "$(cat -- "$stamp")" == "$expected" ]]; then
-    log "rootfs: cache hit rootfs.img"
-    return 0
-  fi
-
-  log "rootfs: creating ext4 image"
+make_guest_tree() {
+  local tree=$1
   rm -rf -- "$tree"
   mkdir -p -- "$tree/bin" "$tree/sbin" "$tree/dev" "$tree/proc" "$tree/sys" "$tree/tmp"
   cp -f -- "$ROOT/build/busybox/busybox" "$tree/bin/busybox"
@@ -137,6 +123,14 @@ build_rootfs() {
   ln -s busybox "$tree/bin/sh"
   cp -f -- "$ROOT/guest/init" "$tree/sbin/init"
   chmod 755 "$tree/sbin/init"
+  cp -f -- "$ROOT/guest/startup" "$tree/bin/startup"
+  chmod 755 "$tree/bin/startup"
+}
+
+write_ext4() {
+  local tree=$1 image=$2
+  command -v mke2fs >/dev/null 2>&1 || die "mke2fs is missing (Ubuntu package: e2fsprogs)"
+  command -v debugfs >/dev/null 2>&1 || die "debugfs is missing (Ubuntu package: e2fsprogs)"
   rm -f -- "$image"
   mke2fs -F -q -t ext4 -b 4096 -m 0 \
     -d "$tree" \
@@ -146,6 +140,23 @@ build_rootfs() {
     "$image" 32M
   own_rootfs "$image"
   e2fsck -fn "$image" >"$ROOT/build/logs/rootfs-fsck.log" 2>&1
+}
+
+build_rootfs() {
+  local tree image stamp expected init_hash
+  tree="$ROOT/build/rootfs-tree"
+  image="$ROOT/build/artifacts/rootfs.img"
+  stamp="$ROOT/build/stamps/rootfs"
+  build_busybox
+  init_hash=$(sha256sum -- "$ROOT/guest/init" "$ROOT/guest/startup" | sha256sum | awk '{ print $1 }')
+  expected="${init_hash} $(cat -- "$ROOT/build/stamps/busybox")"
+  if [[ -f "$stamp" && -f "$image" && "$(cat -- "$stamp")" == "$expected" ]]; then
+    log "rootfs: cache hit rootfs.img"
+    return 0
+  fi
+  log "rootfs: creating ext4 image"
+  make_guest_tree "$tree"
+  write_ext4 "$tree" "$image"
   printf '%s\n' "$expected" >"$stamp"
   log "rootfs: built $image"
 }

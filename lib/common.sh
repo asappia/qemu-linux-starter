@@ -91,6 +91,8 @@ ensure_apt_packages() {
     bzip2
     e2fsprogs
     qemu-system-x86
+    grub-pc-bin
+    util-linux
   )
   local -a missing=()
   local pkg

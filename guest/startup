@@ -1,0 +1,3 @@
+#!/bin/sh
+# What the guest runs after startup. Replace this file to run something else.
+/bin/busybox echo "hello world"
