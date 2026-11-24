@@ -10,6 +10,8 @@ source "$ROOT/lib/common.sh"
 source "$ROOT/lib/acquire.sh"
 # shellcheck source=lib/kernel.sh
 source "$ROOT/lib/kernel.sh"
+# shellcheck source=lib/rootfs.sh
+source "$ROOT/lib/rootfs.sh"
 
 partial_download=""
 trap on_exit EXIT
@@ -36,10 +38,12 @@ main() {
     build-only)
       prepare_downloads
       build_kernel
+      build_rootfs
       ;;
     baseline)
       prepare_downloads
       build_kernel
+      build_rootfs
       not_implemented "guest boot"
       ;;
     run-only)

@@ -88,6 +88,7 @@ ensure_apt_packages() {
     ca-certificates
     xz-utils
     bzip2
+    e2fsprogs
   )
   local -a missing=()
   local pkg

@@ -1,0 +1,50 @@
+#!/bin/sh
+# PID 1. Installed as /sbin/init and run by BusyBox ash.
+
+fail() {
+    echo "startup failure: $1"
+    while true; do
+        /bin/busybox sleep 3600
+    done
+}
+
+if ! /bin/busybox mount -t proc proc /proc; then
+    fail proc
+fi
+
+if ! /bin/busybox mount -t sysfs sysfs /sys; then
+    fail sysfs
+fi
+
+dev_ok=0
+while read -r spec mnt rest; do
+    if [ "$spec" = devtmpfs ] && [ "$mnt" = /dev ]; then
+        dev_ok=1
+    fi
+done < /proc/mounts
+if [ "$dev_ok" -ne 1 ]; then
+    fail devtmpfs
+fi
+
+if [ ! -c /dev/console ]; then
+    fail console
+fi
+
+if ! /bin/busybox mount -t tmpfs tmpfs /tmp; then
+    fail tmpfs
+fi
+
+echo "hello world"
+/bin/busybox sync
+
+if ! /bin/busybox poweroff -f; then
+    echo "shutdown failure: poweroff"
+    while true; do
+        /bin/busybox sleep 3600
+    done
+fi
+
+echo "shutdown failure: poweroff returned"
+while true; do
+    /bin/busybox sleep 3600
+done
