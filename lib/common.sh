@@ -74,6 +74,45 @@ prepare_workspace() {
   export TMP="$TMPDIR"
 }
 
+ensure_apt_packages() {
+  local -a packages=(
+    build-essential
+    bc
+    bison
+    flex
+    perl
+    python3
+    pkg-config
+    libelf-dev
+    curl
+    ca-certificates
+    xz-utils
+    bzip2
+  )
+  local -a missing=()
+  local pkg
+  if ! command -v apt-get >/dev/null 2>&1; then
+    die "apt-get is required; use Ubuntu 20.04 LTS or 22.04 LTS"
+  fi
+  for pkg in "${packages[@]}"; do
+    if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+      missing+=("$pkg")
+    fi
+  done
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    return 0
+  fi
+  log "apt: installing ${missing[*]}"
+  export DEBIAN_FRONTEND=noninteractive
+  if [[ "$(id -u)" -eq 0 ]]; then
+    apt-get update
+    apt-get install -y --no-install-recommends "${missing[@]}"
+  else
+    sudo apt-get update
+    sudo apt-get install -y --no-install-recommends "${missing[@]}"
+  fi
+}
+
 require_tools() {
   local -a missing=()
   local tool package

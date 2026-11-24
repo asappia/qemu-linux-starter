@@ -8,12 +8,15 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 source "$ROOT/lib/common.sh"
 # shellcheck source=lib/acquire.sh
 source "$ROOT/lib/acquire.sh"
+# shellcheck source=lib/kernel.sh
+source "$ROOT/lib/kernel.sh"
 
 partial_download=""
 trap on_exit EXIT
 
 prepare_downloads() {
   require_repo_root
+  ensure_apt_packages
   require_tools
   prepare_workspace
   acquire_sources
@@ -30,9 +33,14 @@ main() {
       require_repo_root
       clean_outputs
       ;;
-    baseline | build-only)
+    build-only)
       prepare_downloads
-      not_implemented "kernel and busybox build"
+      build_kernel
+      ;;
+    baseline)
+      prepare_downloads
+      build_kernel
+      not_implemented "guest boot"
       ;;
     run-only)
       require_repo_root

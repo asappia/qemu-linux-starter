@@ -17,8 +17,8 @@ load_sources() {
   done
   [[ "$LINUX_SHA256" =~ ^[0-9a-f]{64}$ ]] || die "LINUX_SHA256 is not a SHA-256 digest"
   [[ "$BUSYBOX_SHA256" =~ ^[0-9a-f]{64}$ ]] || die "BUSYBOX_SHA256 is not a SHA-256 digest"
-  [[ "$LINUX_URL" == https://* ]] || die "LINUX_URL must be an https URL"
-  [[ "$BUSYBOX_URL" == https://* ]] || die "BUSYBOX_URL must be an https URL"
+  [[ "$LINUX_URL" == https://* && "$BUSYBOX_URL" == https://* ]] || \
+    die "source URLs must be https"
   case "${LINUX_ARCHIVE}${BUSYBOX_ARCHIVE}" in
     *[!a-zA-Z0-9._-]*)
       die "archive names must not contain path separators"
@@ -26,9 +26,9 @@ load_sources() {
   esac
 }
 
-file_sha256() {
-  local actual rest
-  read -r actual rest < <(sha256sum -- "$1")
+file_digest() {
+  local tool=$1 actual rest
+  read -r actual rest < <("$tool" -- "$2")
   printf '%s\n' "$actual"
 }
 
@@ -123,7 +123,7 @@ download_archive() {
     die "cached source $dest is not a regular file"
   fi
   if [[ -f "$dest" ]]; then
-    actual=$(file_sha256 "$dest")
+    actual=$(file_digest sha256sum "$dest")
     if [[ "$actual" == "$digest" ]]; then
       log "download: cache hit $archive"
       return 0
@@ -146,7 +146,7 @@ download_archive() {
     sleep "$attempt"
     attempt=$((attempt + 1))
   done
-  actual=$(file_sha256 "$partial_download")
+  actual=$(file_digest sha256sum "$partial_download")
   if [[ "$actual" != "$digest" ]]; then
     die "downloaded $archive does not match the pinned SHA-256"
   fi
