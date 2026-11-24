@@ -41,19 +41,12 @@ main() {
       ;;
     build-only)
       prepare_downloads
-      build_kernel
-      build_rootfs
-      ;;
-    baseline)
-      prepare_downloads
-      build_kernel
-      build_rootfs
-      run_guest
+      build_disk
       ;;
     run-only)
       require_repo_root
       ensure_apt_packages
-      run_guest
+      run_disk
       ;;
     bootable)
       prepare_downloads

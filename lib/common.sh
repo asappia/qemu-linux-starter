@@ -37,10 +37,10 @@ usage() {
 Usage: ./run.sh [option]
 
 Options:
-  (none)        Build and verify the direct-boot baseline
-  --bootable    Build and verify the self-contained raw disk
-  --build-only  Build baseline artifacts without launching QEMU
-  --run-only    Run and verify existing baseline artifacts
+  (none)        Build and boot the self-contained raw disk
+  --bootable    Same as running ./run.sh with no arguments
+  --build-only  Build the disk without launching QEMU
+  --run-only    Boot an existing disk image
   --clean       Remove build/ and keep the .cache/ download cache
   --help        Show this help
 
@@ -203,7 +203,7 @@ parse_args() {
     shift
   done
   if [[ -z "$mode" ]]; then
-    mode="baseline"
+    mode="bootable"
   fi
   printf '%s\n' "$mode"
 }
