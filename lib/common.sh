@@ -92,7 +92,7 @@ ensure_apt_packages() {
     e2fsprogs
     qemu-system-x86
     grub-pc-bin
-    util-linux
+    fdisk
   )
   local -a missing=()
   local pkg

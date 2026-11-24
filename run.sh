@@ -14,6 +14,8 @@ source "$ROOT/lib/kernel.sh"
 source "$ROOT/lib/rootfs.sh"
 # shellcheck source=lib/qemu.sh
 source "$ROOT/lib/qemu.sh"
+# shellcheck source=lib/disk.sh
+source "$ROOT/lib/disk.sh"
 
 partial_download=""
 trap on_exit EXIT
@@ -54,8 +56,9 @@ main() {
       run_guest
       ;;
     bootable)
-      require_repo_root
-      not_implemented "bootable disk"
+      prepare_downloads
+      build_disk
+      run_disk
       ;;
     *)
       die "internal error: bad mode $mode" 2
