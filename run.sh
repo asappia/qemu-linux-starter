@@ -12,6 +12,8 @@ source "$ROOT/lib/acquire.sh"
 source "$ROOT/lib/kernel.sh"
 # shellcheck source=lib/rootfs.sh
 source "$ROOT/lib/rootfs.sh"
+# shellcheck source=lib/qemu.sh
+source "$ROOT/lib/qemu.sh"
 
 partial_download=""
 trap on_exit EXIT
@@ -44,11 +46,12 @@ main() {
       prepare_downloads
       build_kernel
       build_rootfs
-      not_implemented "guest boot"
+      run_guest
       ;;
     run-only)
       require_repo_root
-      not_implemented "baseline run"
+      ensure_apt_packages
+      run_guest
       ;;
     bootable)
       require_repo_root

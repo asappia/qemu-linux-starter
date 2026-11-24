@@ -45,7 +45,8 @@ Options:
   --help        Show this help
 
 Run this script from the repository root. It does not read standard input.
---clean removes build/ (including logs and test reports) and keeps .cache/.
+--clean removes build/ and keeps the .cache/ download cache.
+QEMU_TIMEOUT is the guest timeout in seconds (default 120).
 EOF
 }
 
@@ -89,6 +90,7 @@ ensure_apt_packages() {
     xz-utils
     bzip2
     e2fsprogs
+    qemu-system-x86
   )
   local -a missing=()
   local pkg
